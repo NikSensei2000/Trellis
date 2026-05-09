@@ -21,6 +21,9 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- GitHub Packages URL is https://maven.pkg.github.com/OWNER/REPO — OWNER must be the GitHub user or org, not the Maven groupId. -->
+        <github.packages.owner>NikSensei2000</github.packages.owner>
+        <github.packages.repo>trellis</github.packages.repo>
     </properties>
 
     <dependencies>
@@ -64,7 +67,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${env.GITHUB_ACTOR}/trellis</url>
+            <url>https://maven.pkg.github.com/${github.packages.owner}/${github.packages.repo}</url>
         </repository>
     </distributionManagement>
 
