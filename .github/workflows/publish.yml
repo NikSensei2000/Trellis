@@ -25,11 +25,26 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-          server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Maven for GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"' \
+            '          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+            '          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">' \
+            '  <servers>' \
+            '    <server>' \
+            '      <id>github</id>' \
+            '      <username>${{ github.actor }}</username>' \
+            '      <password>${{ secrets.GITHUB_TOKEN }}</password>' \
+            '    </server>' \
+            '  </servers>' \
+            '</settings>' > ~/.m2/settings.xml
 
       - name: Deploy to GitHub Packages
-        run: mvn --batch-mode deploy -DskipTests -Dgithub.repository.owner=${{ github.actor }}
+        run: mvn --batch-mode deploy -DskipTests
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
