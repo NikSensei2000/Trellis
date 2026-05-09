@@ -26,27 +26,62 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
 
-      # server-id must match <distributionManagement><repository><id> in pom.xml (github).
-      # Password must be github.token so Basic auth is valid for this repository’s Packages scope.
+      # Do not pass server-id here: we write ~/.m2/settings.xml in the next step so credentials are always
+      # correct and never overwritten by cache/setup-java edge cases.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
-          server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ github.token }}
 
-      # GitHub Packages Maven URLs must use lowercase OWNER/REPO in the path (see GitHub docs for the Maven
-      # registry). Mixed-case owners (e.g. NikSensei2000) often yield 401 on metadata transfer.
-      # GITHUB_TOKEN can only publish to the package namespace for this repository.
+      # GitHub Packages expects HTTP Basic auth. If you still see 401, create a classic PAT with write:packages,
+      # add it as repo secret MAVEN_PUBLISH_TOKEN, and this step will prefer it over GITHUB_TOKEN (org policies).
+      - name: Configure Maven credentials for GitHub Packages
+        env:
+          GH_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MAVEN_PUBLISH_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${MAVEN_PUBLISH_TOKEN:-}" ]; then
+            export TOKEN="$MAVEN_PUBLISH_TOKEN"
+          else
+            export TOKEN="$GITHUB_TOKEN"
+          fi
+          python3 - << 'PY'
+          import os
+          import pathlib
+          import xml.sax.saxutils as esc
+
+          user = os.environ["GH_ACTOR"]
+          token = os.environ["TOKEN"]
+          m2 = pathlib.Path.home() / ".m2"
+          m2.mkdir(parents=True, exist_ok=True)
+          path = m2 / "settings.xml"
+          parts = [
+              '<?xml version="1.0" encoding="UTF-8"?>',
+              '<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"',
+              '          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+              '          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">',
+              "  <servers>",
+              "    <server>",
+              "      <id>github</id>",
+              f"      <username>{esc.escape(user)}</username>",
+              f"      <password>{esc.escape(token)}</password>",
+              "    </server>",
+              "  </servers>",
+              "</settings>",
+          ]
+          path.write_text("\n".join(parts) + "\n", encoding="utf-8")
+          PY
+
+      # GitHub docs: Maven registry URL path must use lowercase owner/repo. GITHUB_TOKEN only works for this repo’s namespace.
       - name: Deploy to GitHub Packages
         run: |
+          set -euo pipefail
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           REPO_LC=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
           mvn --batch-mode deploy -DskipTests \
             -Dgithub.packages.owner="$OWNER_LC" \
             -Dgithub.packages.repo="$REPO_LC"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}

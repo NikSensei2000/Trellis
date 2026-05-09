@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.github.niksensei2000</groupId>
+    <groupId>org.trellis.core</groupId>
     <artifactId>trellis-core</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
