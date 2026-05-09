@@ -1,4 +1,4 @@
-package org.trellis.core.event;
+package com.github.niksensei2000.trellis.event;
 
 /**
  * Acknowledgement contract for at-least-once messaging consumers.

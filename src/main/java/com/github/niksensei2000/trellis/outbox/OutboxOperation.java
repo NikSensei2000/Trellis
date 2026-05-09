@@ -1,7 +1,7 @@
-package org.trellis.core.outbox;
+package com.github.niksensei2000.trellis.outbox;
 
-import org.trellis.core.execution.DomainError;
-import org.trellis.core.execution.Result;
+import com.github.niksensei2000.trellis.execution.DomainError;
+import com.github.niksensei2000.trellis.execution.Result;
 
 /**
  * Produces an {@link OutboxEvent} from an input without persisting it.

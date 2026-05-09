@@ -1,7 +1,7 @@
-package org.trellis.core.event;
+package com.github.niksensei2000.trellis.event;
 
-import org.trellis.core.execution.DomainError;
-import org.trellis.core.execution.Result;
+import com.github.niksensei2000.trellis.execution.DomainError;
+import com.github.niksensei2000.trellis.execution.Result;
 
 /**
  * Consumes {@link Event} instances with explicit acknowledgement via {@link CommitToken}.

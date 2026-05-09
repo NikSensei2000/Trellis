@@ -1,4 +1,4 @@
-package org.trellis.core.execution;
+package com.github.niksensei2000.trellis.execution;
 
 /**
  * Canonical domain-level error for Trellis workflows and operations.

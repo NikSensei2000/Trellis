@@ -1,4 +1,4 @@
-package org.trellis.core.execution;
+package com.github.niksensei2000.trellis.execution;
 
 /**
  * A single step within a broader {@link Workflow}.

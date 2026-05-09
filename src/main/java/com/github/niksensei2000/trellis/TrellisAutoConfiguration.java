@@ -1,4 +1,4 @@
-package org.trellis.core;
+package com.github.niksensei2000.trellis;
 
 /**
  * Auto-configuration for the Trellis Core framework. When this library is added to a Spring Boot
@@ -6,6 +6,6 @@ package org.trellis.core;
  * Components) without requiring the consumer to use {@code @ComponentScan}.
  */
 @org.springframework.boot.autoconfigure.AutoConfiguration
-@org.springframework.context.annotation.ComponentScan("org.trellis.core")
+@org.springframework.context.annotation.ComponentScan("com.github.niksensei2000.trellis")
 public class TrellisAutoConfiguration {
 }
