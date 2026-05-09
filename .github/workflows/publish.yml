@@ -15,6 +15,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       # Manual runs always build and deploy `main`, even if another branch was selected in the UI.
       # Published releases still check out the tag ref (`github.ref`) so the artifact matches the release.
@@ -35,12 +38,15 @@ jobs:
           server-username: ${{ github.actor }}
           server-password: ${{ github.token }}
 
-      # GITHUB_TOKEN can only publish to maven.pkg.github.com/THIS_REPO_OWNER/THIS_REPO_NAME.
-      # Hard-coding NikSensei2000/trellis in the POM breaks deploy if the workflow runs under another owner/fork.
+      # GitHub Packages Maven URLs must use lowercase OWNER/REPO in the path (see GitHub docs for the Maven
+      # registry). Mixed-case owners (e.g. NikSensei2000) often yield 401 on metadata transfer.
+      # GITHUB_TOKEN can only publish to the package namespace for this repository.
       - name: Deploy to GitHub Packages
-        run: >-
-          mvn --batch-mode deploy -DskipTests
-          -Dgithub.packages.owner=${{ github.repository_owner }}
-          -Dgithub.packages.repo=${{ github.event.repository.name }}
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LC=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          mvn --batch-mode deploy -DskipTests \
+            -Dgithub.packages.owner="$OWNER_LC" \
+            -Dgithub.packages.repo="$REPO_LC"
         env:
           GITHUB_TOKEN: ${{ github.token }}
