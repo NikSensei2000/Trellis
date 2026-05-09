@@ -21,7 +21,6 @@
 
     <properties>
         <java.version>21</java.version>
-        <github.repository.owner>NikSensei2000</github.repository.owner>
     </properties>
 
     <dependencies>
@@ -65,8 +64,13 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${github.repository.owner}/trellis</url>
+            <url>https://maven.pkg.github.com/NikSensei2000/Trellis</url>
         </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/NikSensei2000/Trellis</url>
+        </snapshotRepository>
     </distributionManagement>
     <build>
         <plugins>
