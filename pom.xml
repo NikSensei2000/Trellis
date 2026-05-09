@@ -21,6 +21,9 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- GitHub Packages: https://maven.pkg.github.com/OWNER/REPO — OWNER/REPO must match the GitHub repo (not Maven groupId). CI passes -Dgithub.packages.owner/repo from the workflow so the[...]
+        <github.packages.owner>NikSensei2000</github.packages.owner>
+        <github.packages.repo>trellis</github.packages.repo>
     </properties>
 
     <dependencies>
@@ -64,14 +67,10 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/NikSensei2000/Trellis</url>
+            <url>https://maven.pkg.github.com/${github.packages.owner}/${github.packages.repo}</url>
         </repository>
-        <snapshotRepository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/NikSensei2000/Trellis</url>
-        </snapshotRepository>
     </distributionManagement>
+
     <build>
         <plugins>
             <plugin>

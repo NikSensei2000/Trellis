@@ -16,35 +16,31 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Manual runs always build and deploy `main`, even if another branch was selected in the UI.
+      # Published releases still check out the tag ref (`github.ref`) so the artifact matches the release.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
 
+      # server-id must match <distributionManagement><repository><id> in pom.xml (github).
+      # Password must be github.token so Basic auth is valid for this repository’s Packages scope.
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: maven
+          server-id: github
+          server-username: ${{ github.actor }}
+          server-password: ${{ github.token }}
 
-      - name: Configure Maven for GitHub Packages
-        run: |
-          mkdir -p ~/.m2
-          printf '%s\n' \
-            '<?xml version="1.0" encoding="UTF-8"?>' \
-            '<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"' \
-            '          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
-            '          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">' \
-            '  <servers>' \
-            '    <server>' \
-            '      <id>github</id>' \
-            '      <username>${{ github.actor }}</username>' \
-            '      <password>${{ secrets.GITHUB_TOKEN }}</password>' \
-            '    </server>' \
-            '  </servers>' \
-            '</settings>' > ~/.m2/settings.xml
-
+      # GITHUB_TOKEN can only publish to maven.pkg.github.com/THIS_REPO_OWNER/THIS_REPO_NAME.
+      # Hard-coding NikSensei2000/trellis in the POM breaks deploy if the workflow runs under another owner/fork.
       - name: Deploy to GitHub Packages
-        run: mvn --batch-mode deploy -DskipTests
+        run: >-
+          mvn --batch-mode deploy -DskipTests
+          -Dgithub.packages.owner=${{ github.repository_owner }}
+          -Dgithub.packages.repo=${{ github.event.repository.name }}
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
