@@ -30,6 +30,6 @@ jobs:
           server-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to GitHub Packages
-        run: mvn --batch-mode deploy -DskipTests
+        run: mvn --batch-mode deploy -DskipTests -Dgithub.repository.owner=${{ github.actor }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
