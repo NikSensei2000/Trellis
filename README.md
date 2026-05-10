@@ -1,159 +1,218 @@
-# Trellis Core Architecture
+<div align="center">
 
-Trellis Core is an open-source, enterprise-grade architectural foundation for Spring Boot&nbsp;3
-applications on Java&nbsp;21. It encodes three ideas that keep large systems predictable:
+# 🌿 Trellis Core
 
-1. **Railway Oriented Programming (ROP)** ? Business workflows return an explicit `Result` instead
-   of using exceptions for expected failure. That makes control flow composable, testable, and easy
-   to translate into HTTP or messaging responses.
+**A lightweight, enterprise-grade architectural foundation for Spring Boot 3 + Java 21**
 
-2. **Transactional outbox** ? Domain mutations and outbox rows commit together, so you never rely
-   on ?best effort? dual writes to a database and a broker. A dispatcher publishes later from the
-   outbox with at-least-once guarantees.
+[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
+[![License](https://img.shields.io/github/license/niksensei2000/trellis)](LICENSE)
+[![GitHub Packages](https://img.shields.io/badge/Published%20on-GitHub%20Packages-blue?logo=github)](https://github.com/niksensei2000/trellis/packages)
 
-3. **Transactional `Result` aspect** ? Spring rolls back on many exceptions, but not when a method
-   returns `Result.failure(...)` normally. Trellis marks the transaction rollback-only when a
-   transactional method returns a failure outcome, aligning database state with the ROP story.
+*Stop wrestling with try-catch spaghetti and unreliable dual writes. Trellis encodes three battle-tested patterns into one reusable library — keeping your systems predictable, testable, and safe.*
 
-## Modules in this repository
+</div>
 
-This repository publishes `com.github.niksensei2000:trellis-core`, containing:
+---
 
-- `com.github.niksensei2000.trellis.execution` ? `Result`, `DomainError`, `Workflow`, `Operation`, and
-  `TransactionalResultAspect`
-- `com.github.niksensei2000.trellis.outbox` ? `OutboxEvent`, `OutboxStore`, `OutboxOperation`
-- `com.github.niksensei2000.trellis.event` ? `Event`, `CommitToken`, `EventPublisher`, `EventSubscriber`
-- `com.github.niksensei2000.trellis.util` ? `MapperUtility` (shared Jackson configuration)
+## ✨ The Three Pillars
 
-Enable component scanning for `com.github.niksensei2000.trellis` (or register `TransactionalResultAspect` as a
-bean) so the aspect participates in your application context.
+### 1. Railway Oriented Programming (ROP)
 
-## Example: `CreateIncidentWorkflow`
+Using exceptions for expected business failures (e.g., "User Not Found") makes control flow hard to read and test. Trellis introduces a strongly-typed `Result<Success, Failure>` object. Workflows return an explicit outcome, forcing you to handle failures gracefully — making domain logic composable and trivial to map to HTTP or messaging responses.
 
-The following example shows a workflow that persists an incident, builds an outbox event, saves it
-in the same transaction, and returns `Result.success`. If any step returns `Result.failure`, the
-transactional aspect rolls the transaction back even though no exception was thrown.
+### 2. Transactional Result Aspect
+
+In standard Spring, `@Transactional` rolls back only when an exception is thrown. With ROP, you return `Result.failure()` instead. Trellis bridges this gap with an AOP Aspect that monitors your `@Transactional` methods — if a method returns `Result.failure()`, Trellis **automatically marks the transaction as rollback-only**. Your database state stays perfectly aligned with your business logic.
+
+### 3. Transactional Outbox Pattern
+
+Writing to a database and publishing to a broker (Kafka, RabbitMQ) in the same method is the classic "Dual Write" problem. If the broker is down, you're in trouble. Trellis provides primitives to save domain mutations and an `OutboxEvent` in the **exact same transaction**. A separate dispatcher then publishes events asynchronously with **at-least-once delivery guarantees**.
+
+---
+
+## 📦 Modules
+
+`com.github.niksensei2000:trellis-core` ships four packages:
+
+| Package | Contents |
+|---|---|
+| `execution` | Core ROP engine — `Result`, `DomainError`, `Workflow`, `Operation`, `TransactionalResultAspect` |
+| `outbox` | Outbox pattern interfaces — `OutboxEvent`, `OutboxStore`, `OutboxOperation` |
+| `event` | Event primitives — `Event`, `CommitToken`, `EventPublisher`, `EventSubscriber` |
+| `util` | Shared utilities — `MapperUtility` (standard Jackson configuration) |
+
+---
+
+## 🚀 Getting Started
+
+### Installation
+
+> Replace `${trellis.version}` with the latest published release.
+
+**Maven**
+
+```xml
+<dependency>
+   <groupId>com.github.niksensei2000</groupId>
+   <artifactId>trellis-core</artifactId>
+   <version>${trellis.version}</version>
+</dependency>
+```
+
+**Gradle**
+
+```groovy
+implementation 'com.github.niksensei2000:trellis-core:${trellis.version}'
+```
+
+### Spring Configuration
+
+Tell Spring to scan the Trellis packages so the `TransactionalResultAspect` is picked up correctly:
 
 ```java
-package com.example.incident;
+@Configuration
+@ComponentScan(basePackages = {
+        "com.your.company.package",
+        "com.github.niksensei2000.trellis"
+})
+public class AppConfig { }
+```
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
+---
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+## 📖 Usage Guide
 
-import com.github.niksensei2000.trellis.execution.DomainError;
-import com.github.niksensei2000.trellis.execution.ErrorCategory;
-import com.github.niksensei2000.trellis.execution.Operation;
-import com.github.niksensei2000.trellis.execution.Result;
-import com.github.niksensei2000.trellis.execution.Workflow;
-import com.github.niksensei2000.trellis.outbox.OutboxEvent;
-import com.github.niksensei2000.trellis.outbox.OutboxOperation;
-import com.github.niksensei2000.trellis.outbox.OutboxStore;
-import com.github.niksensei2000.trellis.util.MapperUtility;
+Trellis leans on **Java 21 pattern matching for `switch`** to unpack `Result` objects cleanly — no messy if-else chains.
 
+### The Complete Workflow
+
+The example below creates an `Incident`. It shows:
+- Validating and persisting data
+- Creating an outbox event
+- Automatic rollback if any step fails — **zero exceptions thrown**
+
+```java
 @Service
 public class CreateIncidentWorkflow implements Workflow<CreateIncidentCommand, IncidentId> {
 
-    private final Operation<CreateIncidentCommand, Incident> persistIncident;
-    private final OutboxOperation<Incident> incidentCreatedOutbox;
-    private final OutboxStore outboxStore;
+   private final Operation<CreateIncidentCommand, Incident> persistIncident;
+   private final OutboxOperation<Incident> incidentCreatedOutbox;
+   private final OutboxStore outboxStore;
 
-    public CreateIncidentWorkflow(
-            Operation<CreateIncidentCommand, Incident> persistIncident,
-            OutboxOperation<Incident> incidentCreatedOutbox,
-            OutboxStore outboxStore
-    ) {
-        this.persistIncident = persistIncident;
-        this.incidentCreatedOutbox = incidentCreatedOutbox;
-        this.outboxStore = outboxStore;
-    }
+   @Override
+   @Transactional
+   public Result<IncidentId, DomainError> execute(CreateIncidentCommand input) {
 
-    @Override
-    @Transactional
-    public Result<IncidentId, DomainError> execute(CreateIncidentCommand input) {
-        return switch (persistIncident.execute(input)) {
-            case Result.Failure<?, DomainError> failure -> Result.failure(failure.error());
-            case Result.Success<Incident, DomainError> success -> {
-                Incident incident = success.value();
-                yield switch (incidentCreatedOutbox.execute(incident)) {
-                    case Result.Failure<?, DomainError> f -> Result.failure(f.error());
-                    case Result.Success<OutboxEvent, DomainError> s -> {
-                        outboxStore.save(s.value());
-                        yield Result.success(new IncidentId(incident.id()));
-                    }
-                };
-            }
-        };
-    }
+      // Step 1: persist — any failure triggers automatic rollback via Trellis
+      return switch (persistIncident.execute(input)) {
+
+         case Result.Failure<?, DomainError> failure ->
+                 Result.failure(failure.error());
+
+         case Result.Success<Incident, DomainError> success -> {
+            Incident incident = success.value();
+
+            // Step 2: build the outbox event
+            yield switch (incidentCreatedOutbox.execute(incident)) {
+
+               case Result.Failure<?, DomainError> f ->
+                       Result.failure(f.error());
+
+               // Step 3: save outbox record and return success
+               case Result.Success<OutboxEvent, DomainError> s -> {
+                  outboxStore.save(s.value());
+                  yield Result.success(new IncidentId(incident.id()));
+               }
+            };
+         }
+      };
+   }
 }
+```
 
-/** Command handled by the workflow (example). */
-public record CreateIncidentCommand(String title, String severity) {
-}
+---
 
-/** Persisted aggregate (example). */
-public record Incident(String id, String title, String severity) {
-}
+### The Persistence Operation
 
-/** Strongly typed identifier returned to callers (example). */
-public record IncidentId(String value) {
-}
+Operations encapsulate a single unit of work. Validation failures are explicit `DomainError` values — no exceptions.
 
-/** DB operation: validates and inserts the incident (example implementation). */
+```java
 @Service
 class PersistIncidentOperation implements Operation<CreateIncidentCommand, Incident> {
-    @Override
-    public Result<Incident, DomainError> execute(CreateIncidentCommand input) {
-        if (input.title() == null || input.title().isBlank()) {
-            return Result.failure(new DomainError(
-                    "incident.title.required",
-                    "Title is required",
-                    ErrorCategory.VALIDATION
-            ));
-        }
-        String id = UUID.randomUUID().toString();
-        // ... JDBC/JPA repository save here ...
-        return Result.success(new Incident(id, input.title(), input.severity()));
-    }
-}
 
-/** Builds the outbox envelope for IncidentCreated (example implementation). */
+   @Override
+   public Result<Incident, DomainError> execute(CreateIncidentCommand input) {
+
+      if (input.title() == null || input.title().isBlank()) {
+         return Result.failure(new DomainError(
+                 "incident.title.required",
+                 "Title is required",
+                 ErrorCategory.VALIDATION
+         ));
+      }
+
+      String id = UUID.randomUUID().toString();
+      // execute JDBC/JPA insert here
+
+      return Result.success(new Incident(id, input.title(), input.severity()));
+   }
+}
+```
+
+### The Outbox Operation
+
+Converts a domain object into an event envelope for the broker dispatcher to pick up later.
+
+```java
 @Service
 class IncidentCreatedOutboxOperation implements OutboxOperation<Incident> {
-    @Override
-    public Result<OutboxEvent, DomainError> execute(Incident incident) {
-        return switch (MapperUtility.serialize(incident)) {
-            case Result.Failure<?, DomainError> failure -> Result.failure(failure.error());
-            case Result.Success<String, DomainError> success -> {
-                String json = success.value();
-                OutboxEvent event = new OutboxEvent(
-                        incident.id(),
-                        "IncidentCreated.v1",
-                        json,
-                        Map.of("schema", "IncidentCreated.v1"),
-                        Instant.now()
-                );
-                yield Result.success(event);
-            }
-        };
-    }
+
+   @Override
+   public Result<OutboxEvent, DomainError> execute(Incident incident) {
+
+      return switch (MapperUtility.serialize(incident)) {
+
+         case Result.Failure<?, DomainError> failure ->
+                 Result.failure(failure.error());
+
+         case Result.Success<String, DomainError> success -> {
+            OutboxEvent event = new OutboxEvent(
+                    incident.id(),
+                    "IncidentCreated.v1",
+                    success.value(),
+                    Map.of("schema", "IncidentCreated.v1"),
+                    Instant.now()
+            );
+            yield Result.success(event);
+         }
+      };
+   }
 }
 ```
 
-If `PersistIncidentOperation` returns a validation failure, `CreateIncidentWorkflow` returns that
-failure and `TransactionalResultAspect` marks the transaction rollback-only; no partial rows remain.
-The same happens if outbox serialization fails or the outbox event cannot be constructed.
+---
 
-## Building locally
+## 🛠️ Building & Development
+
+Build and run all tests:
 
 ```bash
-mvn -q verify
+mvn clean verify
 ```
 
-## Publishing
+Install to your local Maven cache for testing with other projects:
 
-Releases are published to GitHub Packages via the ?Publish Trellis Core? workflow when a GitHub
-Release is published, or when the workflow is run manually.
+```bash
+mvn clean install
+```
+
+---
+
+## 📦 Publishing
+
+CI/CD runs on **GitHub Actions**. Releases are published to **GitHub Packages** via the *Publish Trellis Core* workflow, which triggers automatically on a new GitHub Release or can be run manually via `workflow_dispatch`.
+
+Your `settings.xml` needs a GitHub Personal Access Token (PAT) with:
+- `read:packages` — for consuming the library
+- `write:packages` — for publishing releases
