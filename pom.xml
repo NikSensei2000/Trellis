@@ -13,7 +13,7 @@
 
     <groupId>com.github.niksensei2000</groupId>
     <artifactId>trellis-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>Trellis Core</name>
@@ -21,8 +21,8 @@
 
     <properties>
         <java.version>21</java.version>
-        <github.owner>niksensei2000</github.owner>
-        <github.repo>trellis</github.repo>
+        <github.packages.owner>niksensei2000</github.packages.owner>
+        <github.packages.repo>trellis</github.packages.repo>
     </properties>
 
     <dependencies>
@@ -66,7 +66,7 @@
         <repository>
             <id>github</id>
             <name>GitHub niksensei2000 Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/niksensei2000/trellis</url>
+            <url>https://maven.pkg.github.com/${github.packages.owner}/${github.packages.repo}</url>
         </repository>
     </distributionManagement>
 

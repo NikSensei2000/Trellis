@@ -12,11 +12,15 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Define variables here so EVERY step can see them
+    env:
+      MAVEN_USERNAME: ${{ github.actor }}
+      MAVEN_PASSWORD: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # Fetches all tags and history so the release event knows where it is
           fetch-depth: 0
 
       - name: Set up JDK 21
@@ -25,19 +29,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           server-id: github
-          # We explicitly map the username/password here to bypass settings.xml issues
-          server-username: GITHUB_ACTOR
-          server-password: MAVEN_PUBLISH_TOKEN
+          # setup-java writes these as environment variable placeholders in settings.xml
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
           cache: maven
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          MAVEN_PUBLISH_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
 
       - name: Deploy to GitHub Packages
         run: |
           mvn --batch-mode deploy -DskipTests \
             -Dgithub.packages.owner="niksensei2000" \
             -Dgithub.packages.repo="trellis"
-        env:
-          # Use the PAT secret primarily
-          GITHUB_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
