@@ -1,4 +1,4 @@
-package org.trellis.core.execution;
+package com.github.niksensei2000.trellis.execution;
 
 /**
  * Canonical Railway Oriented Programming (ROP) outcome for Trellis workflows.

@@ -1,4 +1,4 @@
-package org.trellis.core.execution;
+package com.github.niksensei2000.trellis.execution;
 
 /**
  * A composable unit of work that accepts an input and returns a {@link Result}.

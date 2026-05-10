@@ -1,4 +1,4 @@
-package org.trellis.core.outbox;
+package com.github.niksensei2000.trellis.outbox;
 
 import java.time.Instant;
 import java.util.Map;

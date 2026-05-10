@@ -1,4 +1,4 @@
-package org.trellis.core.util;
+package com.github.niksensei2000.trellis.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -6,9 +6,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.trellis.core.execution.DomainError;
-import org.trellis.core.execution.ErrorCategory;
-import org.trellis.core.execution.Result;
+import com.github.niksensei2000.trellis.execution.DomainError;
+import com.github.niksensei2000.trellis.execution.ErrorCategory;
+import com.github.niksensei2000.trellis.execution.Result;
 
 /**
  * Shared, thread-safe Jackson configuration for Trellis components and adapters.
@@ -62,7 +62,7 @@ public final class MapperUtility {
     /**
      * Serializes {@code obj} to JSON.
      * <p>
-     * Failures are captured as {@link Result#failure(Object)} so calling code can remain
+     * Failures are captured as {@link Result#failure} so calling code can remain
      * exception-free for expected mapping problems.
      * </p>
      *

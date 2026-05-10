@@ -17,15 +17,15 @@ applications on Java&nbsp;21. It encodes three ideas that keep large systems pre
 
 ## Modules in this repository
 
-This repository publishes `org.trellis.core:trellis-core`, containing:
+This repository publishes `com.github.niksensei2000:trellis-core`, containing:
 
-- `org.trellis.core.execution` ? `Result`, `DomainError`, `Workflow`, `Operation`, and
+- `com.github.niksensei2000.trellis.execution` ? `Result`, `DomainError`, `Workflow`, `Operation`, and
   `TransactionalResultAspect`
-- `org.trellis.core.outbox` ? `OutboxEvent`, `OutboxStore`, `OutboxOperation`
-- `org.trellis.core.event` ? `Event`, `CommitToken`, `EventPublisher`, `EventSubscriber`
-- `org.trellis.core.util` ? `MapperUtility` (shared Jackson configuration)
+- `com.github.niksensei2000.trellis.outbox` ? `OutboxEvent`, `OutboxStore`, `OutboxOperation`
+- `com.github.niksensei2000.trellis.event` ? `Event`, `CommitToken`, `EventPublisher`, `EventSubscriber`
+- `com.github.niksensei2000.trellis.util` ? `MapperUtility` (shared Jackson configuration)
 
-Enable component scanning for `org.trellis.core` (or register `TransactionalResultAspect` as a
+Enable component scanning for `com.github.niksensei2000.trellis` (or register `TransactionalResultAspect` as a
 bean) so the aspect participates in your application context.
 
 ## Example: `CreateIncidentWorkflow`
@@ -44,15 +44,15 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.trellis.core.execution.DomainError;
-import org.trellis.core.execution.ErrorCategory;
-import org.trellis.core.execution.Operation;
-import org.trellis.core.execution.Result;
-import org.trellis.core.execution.Workflow;
-import org.trellis.core.outbox.OutboxEvent;
-import org.trellis.core.outbox.OutboxOperation;
-import org.trellis.core.outbox.OutboxStore;
-import org.trellis.core.util.MapperUtility;
+import com.github.niksensei2000.trellis.execution.DomainError;
+import com.github.niksensei2000.trellis.execution.ErrorCategory;
+import com.github.niksensei2000.trellis.execution.Operation;
+import com.github.niksensei2000.trellis.execution.Result;
+import com.github.niksensei2000.trellis.execution.Workflow;
+import com.github.niksensei2000.trellis.outbox.OutboxEvent;
+import com.github.niksensei2000.trellis.outbox.OutboxOperation;
+import com.github.niksensei2000.trellis.outbox.OutboxStore;
+import com.github.niksensei2000.trellis.util.MapperUtility;
 
 @Service
 public class CreateIncidentWorkflow implements Workflow<CreateIncidentCommand, IncidentId> {
@@ -144,7 +144,7 @@ class IncidentCreatedOutboxOperation implements OutboxOperation<Incident> {
 ```
 
 If `PersistIncidentOperation` returns a validation failure, `CreateIncidentWorkflow` returns that
-failure and `TransactionalResultAspect` marks the transaction rollback-only?no partial rows remain.
+failure and `TransactionalResultAspect` marks the transaction rollback-only; no partial rows remain.
 The same happens if outbox serialization fails or the outbox event cannot be constructed.
 
 ## Building locally
