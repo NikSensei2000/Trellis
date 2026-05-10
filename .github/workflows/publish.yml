@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -16,26 +16,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # Uses main for manual runs, or the specific tag for releases
-          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
+          # Fetches all tags and history so the release event knows where it is
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          # This ID MUST match the <id> in your pom.xml <distributionManagement>
           server-id: github
+          # We explicitly map the username/password here to bypass settings.xml issues
+          server-username: GITHUB_ACTOR
+          server-password: MAVEN_PUBLISH_TOKEN
           cache: maven
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          MAVEN_PUBLISH_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
 
       - name: Deploy to GitHub Packages
         run: |
-          # The docs require lowercase owner and repo names for the URL.
-          # We force these via Maven properties to override any POM defaults.
           mvn --batch-mode deploy -DskipTests \
             -Dgithub.packages.owner="niksensei2000" \
             -Dgithub.packages.repo="trellis"
         env:
-          # GitHub Actions provides GITHUB_TOKEN automatically.
-          # If it fails, use the MAVEN_PUBLISH_TOKEN secret you created.
-          GITHUB_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN || secrets.GITHUB_TOKEN }}
+          # Use the PAT secret primarily
+          GITHUB_TOKEN: ${{ secrets.MAVEN_PUBLISH_TOKEN }}
